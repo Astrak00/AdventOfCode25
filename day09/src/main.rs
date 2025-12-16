@@ -32,7 +32,7 @@ fn part1(parsed: &[(i32, i32)]) -> u64 {
     max_area
 }
 
-fn part2(parsed: &[(i32, i32)]) -> Vec<Vec<(i32, i32)>> {
+fn part2_precompute(parsed: &[(i32, i32)]) -> Vec<Vec<(i32, i32)>> {
     let max_y = parsed.iter().map(|(_, y)| *y).max().unwrap_or(0);
     let grid_height = max_y + 1;
 
@@ -76,7 +76,7 @@ fn part2(parsed: &[(i32, i32)]) -> Vec<Vec<(i32, i32)>> {
 }
 
 fn part2_check(parsed: &[(i32, i32)], parsed_per_line_vec: &[Vec<(i32, i32)>]) -> u64 {
-    let mut max_area: u64 = 0;
+    let mut max_area = 0;
     let mut points_used = ((0, 0), (0, 0));
 
     let results = parsed
@@ -85,11 +85,15 @@ fn part2_check(parsed: &[(i32, i32)], parsed_per_line_vec: &[Vec<(i32, i32)>]) -
         .flat_map(|(id_a, point_a)| {
             parsed
                 .par_iter()
+                .rev()
                 .enumerate()
                 .filter(move |(id_b, _)| id_a < *id_b)
                 .filter_map(move |(_, point_b)| {
-                    if check_includes_sides_in_square(*point_a, *point_b, parsed_per_line_vec) {
-                        Some((calculate_area!(*point_a, *point_b), (*point_a, *point_b)))
+                    let area = calculate_area!(*point_a, *point_b);
+                    if area > max_area
+                        && check_includes_sides_in_square(*point_a, *point_b, parsed_per_line_vec)
+                    {
+                        Some((area, (*point_a, *point_b)))
                     } else {
                         None
                     }
@@ -235,7 +239,7 @@ fn main() {
     // So, for the input (1,1), (1,3), (5,3), (5,2), (1,2)
     // The possible area, instead of being infinite, is now limited to the shape formed by those points.
 
-    let parsed_per_line_vec = part2(&parsed);
+    let parsed_per_line_vec = part2_precompute(&parsed);
     let result2 = part2_check(&parsed, &parsed_per_line_vec);
     println!("Part 2 result: {result2}");
 }
